@@ -76,20 +76,8 @@ func (chip chip8) cycle() {
 	opcode := op1<<8 | op2
 
 	// Decode opcode
-	switch opcode & 0xF000 {
-	// Some opcodes //
+	chip.decode(opcode)
 
-	case 0xA000: // ANNN: Sets I to the address NNN
-		// Execute opcode
-		chip.ir = opcode & 0x0FFF
-		chip.pc += 2
-		break
-
-	// More opcodes //
-
-	default:
-		fmt.Printf("Unknown opcode: 0x%X\n", opcode);
-	}
 
 	// Update timers
 	if chip.delayTimer > 0 {
@@ -102,6 +90,44 @@ func (chip chip8) cycle() {
 
 		chip.soundTimer--;
 	}
+}
+
+func (chip chip8) decode(opcode uint16) {
+	switch opcode & 0xF000 {
+	// Some opcodes //
+
+	case 0xA000: // ANNN: Sets I to the address NNN
+		// Execute opcode
+		chip.ir = opcode & 0x0FFF
+		chip.pc += 2
+		break
+	case 0x2000:
+		chip.stack[chip.sp] = chip.pc
+		chip.sp++
+		chip.pc = opcode & 0x0FFF
+		break
+	case 0x0004:
+		if chip.reg[(opcode & 0x00F0) >> 4] > (0xFF - chip.reg[(opcode & 0x0F00) >> 8]){
+			chip.reg[0xF] = 1 //carry
+		} else {
+			chip.reg[0xF] = 0
+		}
+		chip.reg[(opcode & 0x0F00) >> 8] += chip.reg[(opcode & 0x00F0) >> 4]
+		chip.pc += 2
+		break
+	case 0x0033:
+		chip.mem[chip.ir]     = chip.reg[(opcode & 0x0F00) >> 8] / 100;
+		chip.mem[chip.ir + 1] = (chip.reg[(opcode & 0x0F00) >> 8] / 10) % 10;
+		chip.mem[chip.ir + 2] = (chip.reg[(opcode & 0x0F00) >> 8] % 100) % 10;
+		chip.pc += 2
+		break
+
+	// More opcodes //
+
+	default:
+		fmt.Printf("Unknown opcode: 0x%X\n", opcode);
+	}
+
 }
 
 func (chip chip8) drawFlag() bool {
