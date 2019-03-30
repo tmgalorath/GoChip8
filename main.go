@@ -1,9 +1,11 @@
 package main
 
-import "fmt"
-import "time"
-import "os"
-import "github.com/veandco/go-sdl2/sdl"
+import (
+	//"fmt"
+	"time"
+	"os"
+	"github.com/veandco/go-sdl2/sdl"
+)
 
 
 func main(){
@@ -16,13 +18,12 @@ func emulatorMain(){
 	var chip chip8
 	chip.initialize()
 	chip.loadGame("PONG")
-	for true{
+	for {
 		chip.cycle()
 		if chip.drawFlag(){
 			drawGraphics()
 		}
 		chip.setKeys()
-		fmt.Println("cycle")
 		//Sleep 1 second
 		time.Sleep(1000000000)
 		//return
@@ -39,7 +40,7 @@ func startUIThread(){
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%T\n", err)
+
 	defer window.Destroy()
 
 	surface, err := window.GetSurface()
