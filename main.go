@@ -11,7 +11,7 @@ func emulatorMain(){
 	setupInput()
 	var chip chip8
 	chip.initialize()
-	chip.loadGame("pong")
+	chip.loadGame("PONG")
 	for true{
 		chip.cycle()
 		if chip.drawFlag(){
