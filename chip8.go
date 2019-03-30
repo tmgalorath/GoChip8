@@ -59,7 +59,7 @@ func (chip chip8) initialize() {
 }
 
 func (chip chip8) loadGame(name string) {
-	buffer, err := ioutil.ReadFile("roms/PONG")
+	buffer, err := ioutil.ReadFile("roms/" + name)
 	if err == nil {
 		fmt.Println(len(buffer))
 		for i := 0; i < len(buffer); i++ {
