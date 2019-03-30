@@ -74,10 +74,11 @@ func (chip chip8) cycle() {
 	op1 := uint16(chip.mem[chip.pc])
 	op2 := uint16(chip.mem[chip.pc+1])
 	opcode := op1<<8 | op2
+	chip.pc += 2
 
 	// Decode opcode
-	chip.decode(opcode)
 
+	chip.decode(opcode)
 
 	// Update timers
 	if chip.delayTimer > 0 {
@@ -93,40 +94,109 @@ func (chip chip8) cycle() {
 }
 
 func (chip chip8) decode(opcode uint16) {
+
 	switch opcode & 0xF000 {
 	// Some opcodes //
+	case 0x0000:
 
-	case 0xA000: // ANNN: Sets I to the address NNN
-		// Execute opcode
-		chip.ir = opcode & 0x0FFF
-		chip.pc += 2
+		if opcode == 0x00E0 {
+			//disp_clear
+		} else if opcode == 0x00EE {
+			//ret
+		} else {
+			//call rca 1802
+		}
+		break
+	case 0x1000:
+		//Jumps to address NNN.
+		chip.pc = opcode & 0x0FFF
 		break
 	case 0x2000:
 		chip.stack[chip.sp] = chip.pc
 		chip.sp++
 		chip.pc = opcode & 0x0FFF
 		break
-	case 0x0004:
-		if chip.reg[(opcode & 0x00F0) >> 4] > (0xFF - chip.reg[(opcode & 0x0F00) >> 8]){
-			chip.reg[0xF] = 1 //carry
-		} else {
-			chip.reg[0xF] = 0
+	case 0x3000:
+		//will casting truncate left half.
+		if chip.reg[(opcode&0x0F00)>>8] == uint8(opcode&0x00FF) {
+			chip.pc += 2
 		}
-		chip.reg[(opcode & 0x0F00) >> 8] += chip.reg[(opcode & 0x00F0) >> 4]
-		chip.pc += 2
 		break
-	case 0x0033:
-		chip.mem[chip.ir]     = chip.reg[(opcode & 0x0F00) >> 8] / 100;
-		chip.mem[chip.ir + 1] = (chip.reg[(opcode & 0x0F00) >> 8] / 10) % 10;
-		chip.mem[chip.ir + 2] = (chip.reg[(opcode & 0x0F00) >> 8] % 100) % 10;
-		chip.pc += 2
+	case 0x4000:
+		if chip.reg[(opcode&0x0F00)>>8] != uint8(opcode&0x00FF) {
+			chip.pc += 2
+		}
+		break
+	case 0x5000:
+		//contradicts itself
+		if chip.reg[(opcode&0x0F00)>>8] == chip.reg[opcode&0x00FF] {
+			chip.pc += 2
+		}
+		break
+	case 0x6000:
+		chip.reg[(opcode&0x0F00)>>8] = uint8(opcode & 0x00FF)
 		break
 
-	// More opcodes //
+	case 0x7000:
+		chip.reg[(opcode&0x0F00)>>8] += uint8(opcode & 0x00FF)
+		break
+	case 0x8000:
+		x := &chip.reg[(opcode&0x0F00)>>8]
+		y := &chip.reg[(opcode&0x00F0)>>4]
+		switch (opcode & 0x000F) {
 
-	default:
-		fmt.Printf("Unknown opcode: 0x%X\n", opcode);
-	}
+		case 0x0000:
+			*x = *y
+			break
+
+		case 0x0001:
+			*x |= *y
+		case 0x0002:
+			*x &= *y
+		case 0x0003:
+			*x ^= *y
+		case 0x0004:
+			*x += *y
+			//chip.reg[15] =
+		case 0x0005:
+			*x -= *y
+		case 0x0006:
+			*x >>= 1
+
+		case 0x0007:
+			*x = *y
+		case 0x000E:
+			*x = *y
+
+		}
+
+
+
+
+case 0xA000: // ANNN: Sets I to the address NNN
+// Execute opcode
+chip.ir = opcode & 0x0FFF
+break
+
+case 0x8004:
+if chip.reg[(opcode & 0x00F0) >> 4] > (0xFF - chip.reg[(opcode & 0x0F00) >> 8]){
+chip.reg[0xF] = 1 //carry
+} else {
+chip.reg[0xF] = 0
+}
+chip.reg[(opcode & 0x0F00) >> 8] += chip.reg[(opcode & 0x00F0) >> 4]
+break
+case 0xF033:
+chip.mem[chip.ir]     = chip.reg[(opcode & 0x0F00) >> 8] / 100;
+chip.mem[chip.ir + 1] = (chip.reg[(opcode & 0x0F00) >> 8] / 10) % 10;
+chip.mem[chip.ir + 2] = (chip.reg[(opcode & 0x0F00) >> 8] % 100) % 10;
+break
+
+// More opcodes //
+
+default:
+fmt.Printf("Unknown opcode: 0x%X\n", opcode);
+}
 
 }
 
